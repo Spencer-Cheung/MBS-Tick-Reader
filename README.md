@@ -1,50 +1,73 @@
 # MBS Tick OCR Reader
 
-An OCR-based mortgage-backed securities (MBS) pricing reader built with Python, OpenCV, and EasyOCR.
+Version 2.0
 
-This project extracts MBS pricing information from screenshots and converts the data into structured, Excel-ready datasets.
+An OCR-driven Mortgage-Backed Securities (MBS) market data extraction pipeline built with Python, OpenCV, EasyOCR, and Pandas.
+
+This project converts MBS pricing screenshots into structured, Excel-ready datasets while maintaining a stable reporting framework even when market snapshots contain missing months, missing coupons, or inconsistent layouts.
 
 ---
 
 # Overview
 
-Mortgage-backed securities pricing is commonly distributed through screenshots, pricing sheets, or image-based market snapshots. Manually entering this information into Excel is repetitive, time-consuming, and prone to human error.
+Mortgage-backed securities pricing is commonly distributed through screenshots, trading screens, and image-based market snapshots.
 
-This project automates that workflow by:
+Manually entering this information into spreadsheets is:
 
-- Reading MBS pricing screenshots
-- Detecting product headers and coupon information
-- Extracting month labels and tick values
-- Cleaning OCR misreads
-- Converting pricing into decimal format
-- Exporting structured results into Excel-ready tables
+- Time consuming
+- Repetitive
+- Error prone
+- Difficult to scale
 
-The objective is not perfect OCR recognition, but a workflow enhancement tool capable of dramatically reducing manual keystrokes and review time.
+This project automates the extraction process by reading screenshots and transforming pricing information into structured datasets suitable for reporting, analysis, and downstream workflows.
+
+The primary objective is not perfect OCR accuracy.
+
+The primary objective is to create a stable and repeatable workflow that dramatically reduces manual data entry while preserving data integrity.
 
 ---
 
-# Supported Products
+# Key Features
 
-Currently supported products include:
+## Dynamic Month Detection
+
+The system automatically identifies available settlement months from the market screenshot.
+
+## Static Reporting Framework
+
+Version 2.0 introduces a static reporting structure that prevents month shifting and preserves reporting consistency even when months or coupons are missing.
+
+## Placeholder Row Generation
+
+Version 2.0 automatically creates placeholder records when expected month/coupon combinations are not present.
+
+Benefits:
+
+- Consistent output structure
+- Easier Excel integration
+- Reliable downstream reporting
+- No month shifting issues
+
+Blank data is preferred over incorrectly shifted data.
+
+## X-Coordinate Security Mapping
+
+Version 2.0 maps securities using image positioning rather than simple OCR ordering, preventing security misclassification when layouts shift.
+
+---
+
+# Supported Securities
+
+Currently supported:
 
 - UMBS
 - GNMAII
-
-Example formats:
-
-```text
-UMBS 6.0
-UMBS 6.5
-GNMAII 5.5
-```
 
 ---
 
 # Supported Pricing Formats
 
-The OCR pipeline supports multiple MBS pricing structures.
-
-## Standard Price Format
+## Standard Format
 
 ```text
 101-14/20
@@ -68,35 +91,29 @@ The OCR pipeline supports multiple MBS pricing structures.
 
 ---
 
-# Decimal Conversion Examples
+# Decimal Price Conversion
 
 | Raw Price | Decimal Price |
-|---|---|
+|------------|------------|
 | 101-14/20 | 101.625 |
 | 95-02/20+ | 95.640625 |
+| 101-26/03+ | 101.828125 |
 
 ---
 
 # OCR Pipeline
 
-## 1. Image Preprocessing
+## Step 1 — Image Preprocessing
 
-Images are prepared using OpenCV before OCR execution.
-
-Processing includes:
-
-- Upscaling
+- Image upscaling
 - Grayscale conversion
 - Binary thresholding
 - Contrast enhancement
+- Noise reduction
 
-These preprocessing steps improve OCR consistency when working with screenshots or compressed images.
+## Step 2 — OCR Detection
 
----
-
-## 2. OCR Detection
-
-EasyOCR detects and extracts:
+EasyOCR extracts:
 
 - Product headers
 - Coupon values
@@ -104,38 +121,40 @@ EasyOCR detects and extracts:
 - Price values
 - Tick values
 
----
+## Step 3 — OCR Cleanup
 
-## 3. OCR Cleanup & Normalization
-
-Regex-based normalization logic corrects common OCR misreads.
+Regex normalization corrects common OCR errors.
 
 Examples:
 
-| OCR Output | Corrected Value |
-|---|---|
+| OCR Output | Corrected |
+|------------|------------|
 | 7120 | /20 |
 | T20 | /20 |
 | 107+ | /07+ |
+| 703 | /03 |
+| 705+ | /05+ |
 
-This cleanup layer is critical because OCR engines frequently struggle with financial pricing notation.
+## Step 4 — Structured Parsing
 
----
+Detected values are associated with:
 
-## 4. Structured Parsing
-
-After cleanup, extracted values are parsed into structured datasets.
-
-The parser associates:
-
-- Product type
+- Security
 - Coupon
-- Month label
-- Price
-- Tick value
-- Decimal representation
+- Settlement Month
+- Raw Price
+- Tick Value
+- Decimal Price
 
-Final outputs are returned as Pandas DataFrames for downstream analysis or Excel integration.
+## Step 5 — Framework Stabilization
+
+Version 2.0 introduces a final validation stage:
+
+- Detect expected months
+- Build static framework
+- Insert placeholders
+- Preserve month order
+- Prevent row shifting
 
 ---
 
@@ -147,24 +166,8 @@ Final outputs are returned as Pandas DataFrames for downstream analysis or Excel
 - Pandas
 - NumPy
 - Pillow
-- Regex
-
----
-
-# Example Workflow
-
-## Input
-
-```text
-UMBS 6.5
-May/Jun 101-14/20
-```
-
-## Output
-
-| Product | Coupon | Month | Price | Decimal Price |
-|---|---|---|---|---|
-| UMBS | 6.5 | May/Jun | 101-14/20 | 101.625 |
+- Regular Expressions (Regex)
+- Jupyter Notebook
 
 ---
 
@@ -178,39 +181,27 @@ project/
 ├── notebooks/
 ├── config_example.py
 ├── requirements.txt
-└── README.md
+├── README.md
+└── run_ocr.py
 ```
 
 ---
 
 # Installation
 
-Install dependencies:
-
 ```bash
 pip install -r requirements.txt
-```
-
-Example requirements:
-
-```text
-easyocr
-opencv-python
-pandas
-numpy
 ```
 
 ---
 
 # Usage
 
-Run the OCR pipeline:
-
 ```bash
 python run_ocr.py
 ```
 
-Or execute the notebook version through:
+Supported environments:
 
 - Jupyter Notebook
 - VS Code
@@ -220,41 +211,50 @@ Or execute the notebook version through:
 
 # Limitations
 
-OCR performance depends heavily on:
+OCR accuracy remains dependent on:
 
-- Image quality
+- Screenshot quality
 - Compression artifacts
-- Font clarity
-- Screenshot scaling
+- Font rendering
 - Cropping consistency
+- Image scaling
 
-Certain edge cases may still require manual review.
-
-This project should be viewed as a workflow efficiency tool rather than a perfect OCR replacement.
+Version 2.0 focuses on output stability rather than attempting to eliminate all OCR errors.
 
 ---
 
 # Future Improvements
 
-Potential enhancements include:
-
-- YOLO-based object detection
-- Improved table segmentation
-- Dynamic row detection
-- Additional MBS product support
-- Real-time monitoring workflows
-- Interactive review UI
+- CNN-based OCR replacement
+- YOLO object detection
 - Confidence scoring
+- Automated screenshot ingestion
+- Interactive validation interface
+- Additional MBS product support
+- Real-time market monitoring
+- Historical pricing database integration
 
 ---
 
 # Data Privacy
 
-This repository contains code logic only.
+This repository contains code only.
 
-No proprietary loan data, confidential pricing information, internal systems, credentials, or company-specific datasets are included.
+No proprietary pricing information, confidential loan data, internal systems, credentials, or company-specific datasets are included.
 
-All file paths and configurations have been generalized for public release.
+All paths, examples, screenshots, and configurations have been generalized for public release.
+
+---
+
+# Lessons Learned
+
+> Garbage In, Garbage Out.
+
+Financial screenshots are inherently inconsistent.
+
+Rather than forcing perfect OCR accuracy, Version 2.0 focuses on building a stable framework that preserves structure even when source images contain missing months, missing coupons, or OCR imperfections.
+
+In production reporting, a blank value is preferable to a shifted value.
 
 ---
 
@@ -262,4 +262,6 @@ All file paths and configurations have been generalized for public release.
 
 Spencer Cheung
 
-Version 1.0
+Version 2.0
+
+2026
